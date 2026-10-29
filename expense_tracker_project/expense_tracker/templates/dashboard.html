@@ -1,0 +1,197 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-heading">
+    <h2>Welcome, {{ session.get('name') }}!</h2>
+    <p>Track and analyze your personal expenses.</p>
+</div>
+
+<!-- Category Filter -->
+<div class="section-card">
+    <h3>Filter Expenses by Category</h3>
+
+    <form method="GET" action="{{ url_for('dashboard') }}">
+        <select name="category">
+            <option value="">All Categories</option>
+
+            {% for c in categories %}
+            <option value="{{ c.category_name }}"
+                {% if selected_category == c.category_name %}selected{% endif %}>
+                {{ c.category_name }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <button class="button-link" type="submit">Analyze</button>
+
+        <a class="edit-button" href="{{ url_for('dashboard') }}">
+            Reset
+        </a>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary">
+
+    <div class="summary-card">
+        <p>
+            {% if selected_category %}
+                {{ selected_category }} Spending
+            {% else %}
+                Total Spending
+            {% endif %}
+        </p>
+        <h3>₹{{ "%.2f"|format(total) }}</h3>
+    </div>
+
+    <div class="summary-card">
+        <p>Minimum Expense</p>
+        <h3>₹{{ "%.2f"|format(minimum) }}</h3>
+    </div>
+
+    <div class="summary-card">
+        <p>Maximum Expense</p>
+        <h3>₹{{ "%.2f"|format(maximum) }}</h3>
+    </div>
+
+    <div class="summary-card">
+        <p>Average Expense</p>
+        <h3>₹{{ "%.2f"|format(average) }}</h3>
+    </div>
+
+</div>
+
+<!-- Expense List -->
+<div class="section-card">
+    <div class="section-heading">
+        <h3>Your Expenses</h3>
+        <a class="button-link" href="{{ url_for('add_expense') }}">
+            + Add Expense
+        </a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Payment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for e in expenses %}
+                <tr>
+                    <td>{{ e.expense_date }}</td>
+                    <td>{{ e.category_name }}</td>
+                    <td>₹{{ "%.2f"|format(e.amount) }}</td>
+                    <td>{{ e.description or "" }}</td>
+                    <td>{{ e.payment_method or "" }}</td>
+
+                    <td class="actions">
+                        <a href="{{ url_for('edit_expense',
+                                   expense_id=e.expense_id) }}">
+                            Edit
+                        </a>
+
+                        <form method="POST"
+                              action="{{ url_for('delete_expense',
+                                      expense_id=e.expense_id) }}"
+                              onsubmit="return confirm('Delete this expense?');">
+
+                            <button class="delete-button" type="submit">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="6">No expenses found for this selection.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Category-wise Analysis -->
+<div class="section-card">
+    <h3>Category-wise Analysis</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Total</th>
+                    <th>Minimum</th>
+                    <th>Maximum</th>
+                    <th>Average</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for c in category_stats %}
+                <tr>
+                    <td>{{ c.category_name }}</td>
+                    <td>₹{{ "%.2f"|format(c.total) }}</td>
+                    <td>₹{{ "%.2f"|format(c.minimum) }}</td>
+                    <td>₹{{ "%.2f"|format(c.maximum) }}</td>
+                    <td>₹{{ "%.2f"|format(c.average) }}</td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="5">No category analysis available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="charts">
+
+    {% if category_file %}
+    <div class="chart-card">
+        <h3>Category-wise Spending</h3>
+        <img
+            src="{{ url_for('static', filename=category_file) }}"
+            alt="Category-wise expenses pie chart">
+    </div>
+    {% endif %}
+
+    {% if monthly_file %}
+    <div class="chart-card">
+        <h3>
+            {% if selected_category %}
+                Monthly Spending - {{ selected_category }}
+            {% else %}
+                Monthly Expenses
+            {% endif %}
+        </h3>
+
+        <img
+            src="{{ url_for('static', filename=monthly_file) }}"
+            alt="Monthly expenses bar chart">
+    </div>
+    {% endif %}
+
+    {% if not category_file and not monthly_file %}
+    <div class="section-card">
+        <p>Add expenses to view your charts.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
